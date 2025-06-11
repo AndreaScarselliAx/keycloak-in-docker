@@ -17,8 +17,6 @@ services:
       - --import-realm-strategy=OVERWRITE_EXISTING
     volumes:
       - ./keycloak/realms/realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
-      - ./keycloak/scripts/disable-theme-cache.cli:/opt/keycloak/startup-scripts/disable-theme-cache.cli:ro
-      - ./keycloak/themes/custom:/opt/keycloak/themes/custom:ro
     networks:
       - internal
     depends_on:
