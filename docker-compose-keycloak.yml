@@ -1,41 +1,30 @@
-version: '3.3'
 services:
-  keycloak:
-    image: quay.io/keycloak/keycloak:${KEYCLOAK_VERSION}
-    ports:
-      - "8024:8080"
-    environment:
-      - KEYCLOAK_ADMIN=${KEYCLOAK_USER}
-      - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_PASSWORD}
-      - KC_DB=${KEYCLOAK_DATABASE_VENDOR}
-      - KC_DB_URL_HOST=${KEYCLOAK_DATABASE_HOST}
-      - KC_DB_USERNAME=${KEYCLOAK_DATABASE_USER}
-      - KC_DB_PASSWORD=${KEYCLOAK_DATABASE_PASSWORD}
-    command:
-      - start-dev
-      - --import-realm
+  keycloakdb:
+    image: postgres:${POSTGRES_VERSION:-16} # Use a default version if not set
     volumes:
-      - ./realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
+      - keycloak-db-data:/var/lib/postgresql/data
     networks:
-      - internal
+      - keycloak-net
+    env_file: .env
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:${KEYCLOAK_VERSION:-24.0.4} # Use a default version
+    command: start-dev --import-realm
+    networks:
+      - keycloak-net
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./keycloak/realms:/opt/keycloak/data/import
+    env_file: .env
     depends_on:
       - keycloakdb
 
-  keycloakdb:
-    image: postgres:${POSTGRES_VERSION}
-    ports:
-      - "5433:5432"
-    environment:
-      - POSTGRES_USER=${KEYCLOAK_DATABASE_USER}
-      - POSTGRES_PASSWORD=${KEYCLOAK_DATABASE_PASSWORD}
-      - POSTGRES_DB=${KEYCLOAK_DATABASE_NAME}
-    volumes:
-      - keycloak-postgres:/var/lib/postgresql/data
-    networks:
-      - internal
+networks:
+  keycloak-net:
+    driver: bridge
 
 volumes:
-  keycloak-postgres:
-
-networks:
-  internal:
+  # Define a "named volume" for the database to persist data
+  keycloak-db-data:
+    name: keycloak-db-data
